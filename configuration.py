@@ -6,6 +6,7 @@
 
 
 import os
+from vef_scripts.vef_cohort import get_case_directories
 
 input_dir = ""
 input_suffix = "_SSA_surf.vtk"
@@ -15,7 +16,9 @@ input_fnames = sorted([f for f in os.listdir(input_dir) if f.endswith(input_suff
 cohort_dir = ""
 os.makedirs(cohort_dir, exist_ok=True) #Create in case it does not exist.
 
-case_directories = [cd for cd in os.listdir(cohort_dir) if os.path.exists(os.path.join(cohort_dir, cd, 'Meshes', 'mesh_input.vtk'))]
+
+exclude = []
+case_directories = get_case_directories(cohort_dir, exclude=exclude, required="mesh", suffix="_input", cohort_relative=True)
 
 def id_parser(s):
     return s.replace(input_suffix, "") #Extract the id from filename
