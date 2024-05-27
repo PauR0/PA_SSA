@@ -7,15 +7,15 @@
 
 import os
 
-input_dir = "/Users/pau/Aortes/KCL/malak_PAs/"
+input_dir = ""
 input_suffix = "_SSA_surf.vtk"
 n_cores = 4
-input_fnames = sorted([f for f in os.listdir(input_dir) if f.endswith(input_suffix)])[:4]
+input_fnames = sorted([f for f in os.listdir(input_dir) if f.endswith(input_suffix)])
 
-cohort_dir = "/Users/pau/Aortes/KCL/PA_SSA"
+cohort_dir = ""
 os.makedirs(cohort_dir, exist_ok=True) #Create in case it does not exist.
 
-case_directories = [cd for cd in os.listdir(cohort_dir) if os.path.exists(os.path.join(cohort_dir, cd, 'Meshes', 'mesh_input.vtk'))][:4]
+case_directories = [cd for cd in os.listdir(cohort_dir) if os.path.exists(os.path.join(cohort_dir, cd, 'Meshes', 'mesh_input.vtk'))]
 
 def id_parser(s):
     return s.replace(input_suffix, "") #Extract the id from filename
