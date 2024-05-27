@@ -29,6 +29,7 @@ hierarchy = {
     "LPA" : {"parent" : "PT",  "children" : {"RPA"}},
     "RPA" : {"parent" : "LPA", "children" : []},
 }
+#
 
 cl_params = {
     "metadata" : { "type" : "centerline", "version" : "0.0.1"},
@@ -44,6 +45,7 @@ cl_params = {
     #"LPA" : {},
     "RPA" : {"n_knots" : 5}
 }
+#
 
 ec_params = {
     "metadata" : { "type" : "encoding", "version" : "0.0.1"},
@@ -55,3 +57,13 @@ ec_params = {
     #"LPA" : {},
     "RPA" : {"tau_knots" : 5, "theta_knots" : 7}
 }
+#
+
+align_params = {
+    "metadata" : { "type" : "alignment", "version" : "0.0.1"},
+    "alignment_method" : "procrustes",
+    "alignment_params" : None,
+    "n_iters"          : 3,
+    "reference_id"     : 0
+}
+#
