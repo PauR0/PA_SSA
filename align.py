@@ -5,47 +5,57 @@
 import os
 from multiprocessing import Pool
 
-import numpy as np
 import pyvista as pv
 
-from vef_scripts import align
+from vef_scripts import align_encodings
+from vef_scripts.case_io import load_vascular_encoding, save_vascular_encoding
 
-from configuration import (n_cores,
-                           cohort_dir,
+from configuration import (cohort_dir,
+                           n_cores,
                            case_directories,
-                           cl_params,
-                           ec_params)
+                           align_params,
+                           exclude)
 
 
-def compute_centerline_and_encoding(case_name):
+def align_to_junction(case):
+    """
+    Translate the VascularEncoding such that the junction between LPA and RPA is set to the origin.
 
-    case_dir = os.path.join(cohort_dir, case_name)
+    The junction is estimated as the mid-point between the RPA inlet, and its projection on the LPA
+    branch.
 
-    #Compute the centerline if it does not exist.
-    if not os.path.exists(os.path.join(case_dir, 'Centerline', 'centerline.vtm')):
-        compute_centerline(case_dir,
-                        params=cl_params,
-                        binary=True,
-                        overwrite=True,
-                        force=False,
-                        debug=False)
+    The translated VascularEncoding will be saved using the vef convention at Encoding/encoding_aligned_junction.vtm
 
-    #Compute the encoding if it does not exist.
-    if not os.path.exists(os.path.join(case_dir, 'Encoding', 'encoding.vtm')):
-        encode(case_dir,
-               params=ec_params,
-               binary=True,
-               overwrite=True,
-               debug=False)
+    """
+
+    case_dir = os.path.join(cohort_dir, case)
+
+    vsc_enc = load_vascular_encoding(case_dir, suffix="")
+
+    rpa_origin = vsc_enc['RPA'].vcs_to_cartesian(tau=0.0, theta=0.0, rho=0.0).ravel()
+    projection = vsc_enc['LPA'].centerline.get_projection_point(rpa_origin)
+    midpoint = (rpa_origin + projection)/2
+
+    vsc_enc.translate(-midpoint)
+
+    save_vascular_encoding(case_dir, vsc_enc, suffix="_aligned_junction", binary=True, overwrite=True)
+
+    #p = pv.Plotter()
+    #p.add_mesh(vsc_enc.to_multiblock(), multi_colors=True, opacity=0.5)
+    #p.add_mesh(rpa_origin, color='k', render_points_as_spheres=True, point_size=15)
+    #p.add_mesh(projection, color='g', render_points_as_spheres=True, point_size=15)
+    #p.add_mesh(midpoint, color='b', render_points_as_spheres=True, point_size=15)
+    #p.show()
 #
 
 
 def main():
 
-    print(f"Running encoding in {n_cores} cores")
-    pool = Pool(n_cores)
-    pool.map(compute_centerline_and_encoding, case_directories)
+    print(f"Aligning using GPA over the centerline")
+    align_encodings(cohort_dir, params=align_params, exclude=exclude, overwrite=True)
 
+    with Pool(n_cores) as pool:
+        pool.map(align_to_junction, case_directories)
 
 
 if __name__ == '__main__':
