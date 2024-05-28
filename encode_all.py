@@ -8,6 +8,7 @@ from multiprocessing import Pool
 import numpy as np
 import pyvista as pv
 
+import vascular_encoding_framework.messages as msg
 from vef_scripts import compute_centerline, encode
 
 from configuration import (n_cores,
@@ -21,6 +22,7 @@ def compute_centerline_and_encoding(case_name):
 
     case_dir = os.path.join(cohort_dir, case_name)
 
+    msg.computing_message(f"{case_name} centerline")
     #Compute the centerline if it does not exist.
     if not os.path.exists(os.path.join(case_dir, 'Centerline', 'centerline.vtm')):
         compute_centerline(case_dir,
@@ -29,7 +31,9 @@ def compute_centerline_and_encoding(case_name):
                         overwrite=True,
                         force=False,
                         debug=False)
+    msg.done_message(f"{case_name} centerline")
 
+    msg.computing_message(f"{case_name} encoding")
     #Compute the encoding if it does not exist.
     if not os.path.exists(os.path.join(case_dir, 'Encoding', 'encoding.vtm')):
         encode(case_dir,
@@ -37,6 +41,7 @@ def compute_centerline_and_encoding(case_name):
                binary=True,
                overwrite=True,
                debug=False)
+    msg.done_message(f"{case_name} encoding")
 #
 
 

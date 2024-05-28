@@ -7,6 +7,7 @@ from multiprocessing import Pool
 
 import pyvista as pv
 
+import vascular_encoding_framework.messges as msg
 from vef_scripts import align_encodings
 from vef_scripts.case_io import load_vascular_encoding, save_vascular_encoding
 
@@ -28,6 +29,7 @@ def align_to_junction(case):
 
     """
 
+    msg.computing_message(f"{case} junction alignment")
     case_dir = os.path.join(cohort_dir, case)
 
     vsc_enc = load_vascular_encoding(case_dir, suffix="")
@@ -46,6 +48,7 @@ def align_to_junction(case):
     #p.add_mesh(projection, color='g', render_points_as_spheres=True, point_size=15)
     #p.add_mesh(midpoint, color='b', render_points_as_spheres=True, point_size=15)
     #p.show()
+    msg.done_message(f"{case} junction alignment")
 #
 
 
