@@ -6,7 +6,9 @@
 
 
 import os
+
 from vef_scripts.vef_cohort import get_case_directories
+import pandas as pd
 
 input_dir = ""
 input_suffix = "_SSA_surf.vtk"
@@ -16,6 +18,13 @@ input_fnames = sorted([f for f in os.listdir(input_dir) if f.endswith(input_suff
 cohort_dir = ""
 os.makedirs(cohort_dir, exist_ok=True) #Create in case it does not exist.
 
+p_fname = "/Users/pau/Aortes/KCL/malak_PAs/P_data.xlsx"
+p_data = pd.read_excel(p_fname, dtype={'Id': str, 'mPAP': float}).set_index('Id')
+_duplicated = p_data.index.duplicated()
+if _duplicated.sum():
+    print(f"Warning: The following cases are duplicated on pressure file {p_data.index[_duplicated]}.",
+          "\n\tOnly first occurrences will be kept....")
+    p_data = p_data[~_duplicated]
 
 exclude = []
 case_directories = get_case_directories(cohort_dir, exclude=exclude, required="mesh", suffix="_input", cohort_relative=True)
