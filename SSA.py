@@ -263,7 +263,7 @@ def main(suffix, regressor_kind='linear', plot_r2=True, plot_extreme_shapes=True
     alignmnt = "GPA" if suffix == '_aligned' else "junction"
     print(f"Loading Cohort Encodings aligned with {alignmnt}")
     cohort = load_cohort_object(cohort_dir, which='encoding', exclude=exclude, keys_from_dirs=os.path.basename, suffix=suffix)
-    print("......Done!")
+    print(f"{len(cohort)} encondings loaded!")
 
     print("-"*50)
     print(f"Computing the pressure regression study on 8 components with suffix {suffix}")
