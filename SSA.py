@@ -361,8 +361,94 @@ def alternative(suffix='_aligned', exp_var=.95, regressor_kind='linear', plot_r2
         cross_validate_regression(X=X, y=y, regressor_kind='pls', n_splits=n_splits, n_components=pls_components)
 #
 
+def pca_modes_by_correlation(X, y, max_modes=20):
+    """
+    Sort the first __max_modes__ modes by the absolute value of their correlation with the response variable y.
+
+    Arguments
+    ---------
+
+        X : np.ndarray (n_samp, n_feats)
+        y : np.ndarray (n_samp,)
+        max_modes : int
+    """
+    pca = PCA(n_components=max_modes).fit(X=X)
+    X_tr = pca_transform_standardized(X=X, pca=pca)
+    return pca, sorted([(i, np.corrcoef(feat, y)[0,1]) for i, feat in enumerate(X_tr.T)], key=lambda s:abs(s[1]))
 
 
+def shape_and_flow_regression(suffix='_aligned', n_components=10, n_splits=3):
+    """
+    This function implements the regression by using the 5 most correlated principal components
+    and the measured flow parameters.
+    """
+
+    print("Loading cohort")
+    encodings = load_cohort_object(cohort_dir, which='encoding', exclude=exclude, keys_from_dirs=os.path.basename, suffix=suffix)
+    print(f"{len(encodings)} encodings loaded.")
+    ids = [i for i in encodings if i in p_data.index]
+
+    flow_fields = ["Signal Width", "Flow Maximum", "Time to Maximum", "Time to Minimum", "Flow Minimum"]
+
+    X_shape = np.array([encodings[i].to_feature_vector(mode='full', add_metadata=False) for i in ids])
+    X_flow = p_data.loc[ids, flow_fields].to_numpy()
+    y = p_data.loc[ids, 'mPAP'].to_numpy()
+    print(X_shape.shape)
+    print(X_flow.shape)
+
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42) #Fixing the random state for reproducibilityi
+    results = []
+    for i, (train_id, test_id) in enumerate(kf.split(X_shape)):
+
+        pca = PCA(n_components=n_components).fit(X=X_shape[train_id])
+        X_ld = pca_transform_standardized(X_shape, pca=pca)
+        X_ = np.concatenate([X_ld, X_flow], axis=1)
+        feat_names = [f'M{k+1}' for k in range(n_components)] + flow_fields
+        feat_pressure_corr = np.array([np.corrcoef(feat, y)[0,1] for feat in X_.T])
+        sorted_feat_idx = np.flip(np.argsort(np.abs(feat_pressure_corr)))
+        print(f"Correlations:")
+        for n, c in zip(feat_names, feat_pressure_corr):
+            print(f"\t{n}\t|\t{c:.2f}")
+
+        for j in range(1, X_.shape[1]+1):
+            feats = sorted_feat_idx[:j]
+            feats_name = [feat_names[n] for n in feats]
+            print(f"Using features {feats_name}")
+            X = X_[:, feats]
+            reg = get_regressor(regressor_kind='linear', n_components=n_components).fit(X[train_id], y[train_id])
+            y_test_pred = reg.predict(X[test_id])
+            y_train_pred = reg.predict(X[train_id])
+
+            results.append({'Fold'       : i,
+                            'R2'         : r2_score(y[train_id], y_train_pred),
+                            'MAE'        : mean_absolute_error(y[train_id], y_train_pred),
+                            'Type'       : 'train',
+                            "n features" : j,
+                            "feature names" : feats_name})
+
+            results.append({'Fold'       : i,
+                            'R2'         : r2_score(y[test_id], y_test_pred),
+                            'MAE'        : mean_absolute_error(y[test_id], y_test_pred),
+                            "n features" : j,
+                            'Type'       : 'test',
+                            "feature names" : feats_name})
+
+    results = pd.DataFrame(results)
+    results.to_pickle("results.pkl")
+
+    _, ax = plt.subplots(1, 4, sharey=True)
+    for i in range(n_splits):
+        ress = results[results['Fold'] == i]
+        sns.lineplot(data=ress, x='n features', y='R2', hue='Type', ax=ax[i])
+        ax[i].set_title(f"Fold {i}")
+        ax[i].grid(axis='both', color='gray', linestyle='--', linewidth=0.5)
+        ax[i].set_ylim(-0.1, 0.55)
+
+    sns.lineplot(data=results, x='n features', y='R2', hue='Type', ax=ax[3])
+    ax[3].set_title(f"Averaged Folds")
+    ax[3].grid(axis='both', color='gray', linestyle='--', linewidth=0.5)
+    plt.show()
+#
 
 if __name__ == '__main__':
 
@@ -370,4 +456,6 @@ if __name__ == '__main__':
     main(suffix='_aligned_junction', regressor_kind='linear', plot_r2=True, plot_extreme_shapes=True)
 
     alternative(suffix='_aligned', exp_var=.95, regressor_kind='linear', plot_r2_over_pca=True, cv_assessment=True, n_splits=3, pls_assessment=True, pls_components=1)
+
+    shape_and_flow_regression(suffix='_aligned', n_components=10)
 #
