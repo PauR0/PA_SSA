@@ -18,8 +18,19 @@ input_fnames = sorted([f for f in os.listdir(input_dir) if f.endswith(input_suff
 cohort_dir = ""
 os.makedirs(cohort_dir, exist_ok=True) #Create in case it does not exist.
 
-p_fname = "/Users/pau/Aortes/KCL/malak_PAs/P_data.xlsx"
-p_data = pd.read_excel(p_fname, dtype={'Id': str, 'mPAP': float}).set_index('Id')
+#p_fname = "/Users/pau/Aortes/KCL/malak_PAs/P_data.xlsx"
+#p_data = pd.read_excel(p_fname, dtype={'Id': str, 'mPAP': float}).set_index('Id')
+
+p_fname = "/Users/pau/Aortes/KCL/malak_PAs/P_Flow_data_96.xlsx"
+p_data = pd.read_excel(p_fname,
+                       dtype={'Id': str,
+                              'mPAP': float,
+                              "Signal Width" : float,
+                              "Flow Maximum" : float,
+                              "Time to Maximum" : float,
+                              "Time to Minimum" : float,
+                              "Flow Minimum" : float}).set_index('Id')
+
 _duplicated = p_data.index.duplicated()
 if _duplicated.sum():
     print(f"Warning: The following cases are duplicated on pressure file {p_data.index[_duplicated]}.",
@@ -27,6 +38,7 @@ if _duplicated.sum():
     p_data = p_data[~_duplicated]
 
 exclude = []
+exclude = ['80524'] #Not propperly encoded morphology.
 case_directories = get_case_directories(cohort_dir, exclude=exclude, required="mesh", suffix="_input", cohort_relative=True)
 
 def id_parser(s):
